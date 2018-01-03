@@ -70,8 +70,11 @@ class Autoencoding(Transformation):
         return X
 
 
-def transformation_factory(name, number_of_features, **kw):
+def transformation_factory(name, number_of_features=None, **kw):
     name = name.lower()[:5]
+    if number_of_features is None:
+        if name not in ("std", "stand"):
+            raise RuntimeError("Please supply the number_of_features argument!")
     exc = {"std": Standardization,
            "stand": Standardization,
            "ae": Autoencoding,

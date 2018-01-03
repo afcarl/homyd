@@ -37,17 +37,6 @@ def ravel_to_matrix(A):
     return A.reshape(A.shape[0], np.prod(A.shape[1:]))
 
 
-def argshuffle(array):
-    indices = np.arange(len(array))
-    np.random.shuffle(indices)
-    return indices
-
-
-def shuffle(*arrays):
-    indices = argshuffle(arrays[0])
-    return tuple(map(lambda ar: ar[indices], arrays))
-
-
 def dummycode(dependent, get_translator=True):
     categ = np.unique(dependent)
     dummy = np.arange(len(categ))

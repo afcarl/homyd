@@ -14,6 +14,9 @@ class EmbeddingBase:
         self.fitted = False
         self.dim = 1
 
+    def fresh(self):
+        return self.__class__(floatX=self.floatX)
+
     def translate(self, X):
         return self._translate(X)
 
@@ -26,16 +29,19 @@ class EmbeddingBase:
     def outputs_required(self):
         return self.dim
 
-    def apply(self, X):
-        dcs = self.dummycode(X)
+    def apply(self, Y):
+        Y = np.squeeze(Y)
+        if not self.fitted:
+            raise RuntimeError("Not yet fitted! Call fit() first!")
+        if Y.ndim != 1:
+            raise RuntimeError("Y must be a vector!")
+        dcs = self.dummycode(Y)
         return self._embedments[dcs]
 
     def __str__(self):
         return self.name
 
     def __call__(self, X):
-        if not self.fitted:
-            raise RuntimeError("Not yet fitted! Call fit() first!")
         return self.apply(X)
 
 
@@ -52,6 +58,9 @@ class OneHot(EmbeddingBase):
         self._yes = yes
         self._no = no
         self.dim = 0
+
+    def fresh(self):
+        return self.__class__(self._yes, self._no)
 
     def translate(self, prediction: np.ndarray, dummy: bool=False):
         if prediction.ndim == 2:
@@ -81,6 +90,9 @@ class Embedding(EmbeddingBase):
     def __init__(self, embeddim):
         super().__init__()
         self.dim = embeddim
+
+    def fresh(self):
+        return self.__class__(self.dim)
 
     def translate(self, prediction: np.ndarray, dummy: bool=False):
         from ..utilities.vectorop import euclidean

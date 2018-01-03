@@ -3,12 +3,12 @@ import warnings
 import numpy as np
 
 from ..parser import parser
-from .abstract_frame import Frame
+from .problem import Problem
 from ..features import embedding_factory
 from ..utilities.const import log
 
 
-class BasicSequence(Frame):
+class BasicSequence(Problem):
 
     type = "basicsequence"
 
@@ -20,7 +20,7 @@ class BasicSequence(Frame):
             X.append(source[start:start+time])
             Y.append(source[start+time+1])
         super().__init__(
-            (np.array(X), np.array(Y)), cross_val, indeps=0, headers=None, **kw
+            (np.array(X), np.array(Y)), cross_val, labels=0, headers=None, **kw
         )
 
     def reset_data(self, shuff, transform, trparam=None):
@@ -34,7 +34,7 @@ class BasicSequence(Frame):
         pass
 
 
-class EagerText(Frame):
+class EagerText(Problem):
 
     type = "sequence"
 
@@ -67,14 +67,14 @@ class EagerText(Frame):
         data = self._embedding(chararr)
         data, deps = split_X_y(data)
 
-        super().__init__((data, deps), cross_val=cross_val, indeps=0, headers=None, **parser_kw)
+        super().__init__((data, deps), cross_val=cross_val, labels=0, headers=None, **parser_kw)
 
         self.reset_data(shuff=True)
 
     def reset_data(self, shuff: bool, transform=None, trparam: int=None):
         if transform is not None:
             transform = None
-        Frame.reset_data(self, shuff=shuff, transform=transform)
+        Problem.reset_data(self, shuff=shuff, transform=transform)
 
     @property
     def neurons_required(self):
