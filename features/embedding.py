@@ -53,7 +53,7 @@ class OneHot(EmbeddingBase):
 
     name = "onehot"
 
-    def __init__(self, yes=0., no=1.):
+    def __init__(self, yes=1., no=0.):
         super().__init__()
         self._yes = yes
         self._no = no
