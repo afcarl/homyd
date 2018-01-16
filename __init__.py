@@ -1,3 +1,4 @@
 """Hold my Data"""
 
-from .frame.problem import Problem
+from .frame.dataset import Dataset
+from .learning_table.general import LearningTable

@@ -1,3 +1,7 @@
+import numpy as np
+import pandas as pd
+
+
 def pull_text(src, coding="utf-8-sig"):
     with open(src, mode="r", encoding=coding) as opensource:
         return opensource.read()
@@ -15,3 +19,13 @@ def isnumber(string: str):
     if all(part.isdigit() for part in s.split(".")):
         return True
     return False
+
+
+def listify(iterable):
+    try:
+        iterator = iter(iterable)
+    except Exception as E:
+        raise ValueError(f"Argument is not iterable: ({str(E)})")
+    if type(iterable) in (pd.DataFrame, pd.Series, np.ndarray):
+        return iterable.tolist()
+    return list(iterator)

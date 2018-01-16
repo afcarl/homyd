@@ -3,12 +3,12 @@ import warnings
 import numpy as np
 
 from ..parser import parser
-from .problem import Problem
+from .dataset import Dataset
 from ..features import embedding_factory
 from ..utilities.const import log
 
 
-class BasicSequence(Problem):
+class BasicSequence(Dataset):
 
     type = "basicsequence"
 
@@ -34,7 +34,7 @@ class BasicSequence(Problem):
         pass
 
 
-class EagerText(Problem):
+class EagerText(Dataset):
 
     type = "sequence"
 
@@ -74,7 +74,7 @@ class EagerText(Problem):
     def reset_data(self, shuff: bool, transform=None, trparam: int=None):
         if transform is not None:
             transform = None
-        Problem.reset_data(self, shuff=shuff, transform=transform)
+        Dataset.reset_data(self, shuff=shuff, transform=transform)
 
     @property
     def neurons_required(self):

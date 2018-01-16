@@ -30,7 +30,7 @@ def massive_txt(source, bsize, ngram=1, **kw):
 
 
 def csv(path, header=1, skiprows=None, skip_footer=0, **kw):
-    """Extracts a data table from a file, returns X, Y, header"""
+    """Extracts a data learning_table from a file, returns X, Y, header"""
     df = pd.read_csv(path, sep=kw.pop("sep", "\t"), lineterminator=kw.pop("end", "\n"),
                      encoding=kw.pop("encoding", "utf-8"), skiprows=skiprows, skip_footer=skip_footer,
                      header=max(0, header-1))
