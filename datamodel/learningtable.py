@@ -23,6 +23,10 @@ class LearningTable:
     def shapes(self):
         return self.X.shape[1:], self.Y.shape[1:]
 
+    @property
+    def header(self):
+        return self.labels + self.paramset
+
     def dropna(self, inplace=False):
         if not inplace:
             df = self.raw.dropna(subset=self.labels + self.paramset)
@@ -52,8 +56,7 @@ class LearningTable:
             raise ValueError("Alpha should be between 1. and 0.")
         alpha = int(alpha * len(self))
         arg = self._get_indices_for_resampling(randomize)
-        rarg, larg = arg[:alpha], arg[alpha:]
-        df1, df2 = self.raw.iloc[rarg], self.raw.iloc[larg]
+        df1, df2 = self.raw.iloc[arg[:alpha]], self.raw.iloc[arg[alpha:]]
         return (self.__class__(df1, *self._copy_configuration()),
                 self.__class__(df2, *self._copy_configuration()))
 
@@ -61,6 +64,9 @@ class LearningTable:
         return self.__class__(self.raw.copy(), *self._copy_configuration())
 
     def merge(self, other):
+        if not self._is_mergeable(other):
+            err = f"Cannot merge learning tables with different headers:\n{self.header} != {other.header}!"
+            raise RuntimeError(err)
         self.raw = self.raw.append(other.raw)
         self.reset()
         return self
@@ -78,6 +84,11 @@ class LearningTable:
 
     def _copy_configuration(self):
         return self.labels[:], self.paramset[:]
+
+    def _is_mergeable(self, other):
+        if len(other.header) != len(self.header):
+            return False
+        return all(left == right for left, right in zip(self.header, other.header))
 
     def __iter__(self):
         return self.batch_stream(32, infinite=False, randomize=True)

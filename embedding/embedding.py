@@ -113,7 +113,13 @@ class Embedding(EmbeddingBase):
         self.fitted = True
 
 
-def embedding_factory(embeddim, **kw):
-    if not embeddim or embeddim == "onehot":
+def embedding_factory(embedding, **kw):
+    if embedding == "onehot":
         return OneHot(**kw)
-    return Embedding(embeddim)
+    if embedding == "dummycode":
+        return Dummycode(**kw)
+    if isinstance(embedding, int):
+        if embedding < 1:
+            raise ValueError(f"Embedding dimension invalid: {embedding}")
+        return Embedding(embedding)
+    raise ValueError(f"Embedding specification not understood: {embedding}")
