@@ -1,4 +1,3 @@
 """Hold my Data"""
 
-from .frame.dataset import Dataset
-from .learning_table.general import LearningTable
+from .data_model.dataset import Dataset

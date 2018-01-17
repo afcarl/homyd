@@ -1,7 +1,7 @@
 import numpy as np
 
-from ..utilities.vectorop import dummycode
-from ..utilities.highlevel import transform
+from homyd.utilities.vectorop import dummycode
+from homyd.utilities.highlevel import transform
 
 
 class Transformation:

@@ -1,7 +1,8 @@
-from ..learning_table.general import LearningTable
+from data_model.general import LearningTable
+from embedding.embedding import EmbeddingBase
+from transformation import Transformation
+
 from ..features import embedding_factory, transformation_factory
-from ..features.transformation import Transformation
-from ..features.embedding import EmbeddingBase
 
 
 class Dataset:
