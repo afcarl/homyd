@@ -1,3 +1,5 @@
+import pandas as pd
+
 from . import LearningTable
 from ..embedding import EmbeddingBase, embedding_factory
 from ..transformation import Transformation, transformation_factory
@@ -5,17 +7,27 @@ from ..transformation import Transformation, transformation_factory
 
 class Dataset:
 
-    __slots__ = ["_subsets", "_config", "_raw"]
+    __slots__ = ["_subsets", "_config", "_raw", "_shapes"]
 
-    def __init__(self, data: LearningTable):
+    def __init__(self, data: LearningTable, shape=()):
         self._raw = data.raw
         self._subsets = dict()
         self._config = {}
+        self._shapes = data.shapes if shape else shape
         self.add_subset("learning", data)
+
+    @classmethod
+    def from_xlsx(cls, source, labels, paramset=None, **pdkw):
+        df = pd.read_excel(source, **pdkw)
+        return cls(LearningTable(df, labels, paramset))
+
+    @classmethod
+    def from_multidimensional(cls, X, Y):
+        return cls(LearningTable.from_multidimensional(X, Y), shape=X.shape[1:])
 
     @property
     def shapes(self):
-        return self._subsets["learning"].shapes
+        return self._shapes
 
     def dropna(self):
         for subset in self._subsets:
@@ -38,6 +50,11 @@ class Dataset:
         if learningtable in self._subsets:
             raise RuntimeError(f"Subset already exists: {learningtable}")
         self._subsets[name] = learningtable
+
+    def merge_into_learning(self, subset):
+        if subset not in self._subsets:
+            raise ValueError(f"No such subset: {subset}")
+        self._subsets["learning"].merge(self._subsets[subset])
 
     def table(self, subset, shuffle=True):
         tab = self._subsets[subset]
@@ -63,6 +80,10 @@ class FlatDataset(Dataset):
             self.set_transformation(transformation)
         if embedding is not None:
             self.set_embedding(embedding)
+
+    @classmethod
+    def from_multidimensional(cls, X, Y):
+        return cls(LearningTable.from_multidimensional(X, Y))
 
     def set_transformation(self, transformation, **kw):
         if isinstance(transformation, str):

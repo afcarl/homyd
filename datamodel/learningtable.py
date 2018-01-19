@@ -4,7 +4,7 @@ import pandas as pd
 
 class LearningTable:
 
-    __slots__ = ["raw", "X", "Y", "labels", "paramset"]
+    __slots__ = ["raw", "X", "Y", "labels", "paramset", "shape"]
 
     def __init__(self, df: pd.DataFrame, labels, paramset=None):
         self.raw = df
@@ -15,9 +15,11 @@ class LearningTable:
         self.reset()
 
     @classmethod
-    def from_xlsx(cls, source, labels, paramset=None, **pdkw):
-        df = pd.read_excel(source, **pdkw)
-        return cls(df, labels, paramset)
+    def from_multidimensional(cls, X, Y):
+        flat = X.reshape(len(X), np.prod(X.shape[1:]))
+        df = pd.DataFrame(data=flat)
+        df["LABEL"] = Y
+        return cls(df, labels=["LABEL"])
 
     @property
     def shapes(self):
@@ -37,7 +39,6 @@ class LearningTable:
     def reset(self):
         self.X = self.raw[self.paramset].as_matrix()
         self.Y = self.raw[self.labels].as_matrix()
-        return self
 
     def batch_stream(self, size, infinite=True, randomize=True):
         arg = self._get_indices_for_resampling(randomize)
@@ -64,12 +65,12 @@ class LearningTable:
         return self.__class__(self.raw.copy(), *self._copy_configuration())
 
     def merge(self, other):
-        if not self._is_mergeable(other):
+        if len(other.header) != len(self.header) and \
+                not all(left == right for left, right in zip(self.header, other.header)):
             err = f"Cannot merge learning tables with different headers:\n{self.header} != {other.header}!"
             raise RuntimeError(err)
         self.raw = self.raw.append(other.raw)
         self.reset()
-        return self
 
     def shuffle(self):
         arg = self._get_indices_for_resampling(randomize=True)
@@ -84,14 +85,6 @@ class LearningTable:
 
     def _copy_configuration(self):
         return self.labels[:], self.paramset[:]
-
-    def _is_mergeable(self, other):
-        if len(other.header) != len(self.header):
-            return False
-        return all(left == right for left, right in zip(self.header, other.header))
-
-    def __iter__(self):
-        return self.batch_stream(32, infinite=False, randomize=True)
 
     def __len__(self):
         return len(self.X)
