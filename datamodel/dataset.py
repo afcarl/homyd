@@ -1,6 +1,6 @@
 import pandas as pd
 
-from . import LearningTable
+from .learningtable import LearningTable
 from ..embedding import EmbeddingBase, embedding_factory
 from ..transformation import Transformation, transformation_factory
 

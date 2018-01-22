@@ -1,25 +1,24 @@
 import numpy as np
 
-from homyd.utilities.vectorop import dummycode
-from homyd.utilities.highlevel import transform
+from ..utilities.vectorop import dummycode
+from ..utilities.highlevel import transform
 
 
 class Transformation:
 
-    def __init__(self, name=None, factors=None, **kw):
-        self.factors = factors
+    def __init__(self, **kw):
         self.model = None
-        self._transformation = None
-        self._transform = None
-        self._applied = False
-        self.name = self.__class__.__name__.lower() if name is None else name
 
     @property
     def fitted(self):
         return self.model is not None
 
+    @property
+    def name(self):
+        return self.__class__.__name__.lower()
+
     def fit(self, X, Y=None):
-        self.model = transform(X, self.factors, get_model=True, method=self.name, y=Y)[-1]
+        self.model = transform(X, get_model=True, method=self.name, y=Y)[-1]
 
     def apply(self, X, Y=None):
         return self.model.transform(X)[..., :self.factors]
@@ -49,27 +48,6 @@ class PLS(Transformation):
         return ret
 
 
-class Autoencoding(Transformation):
-    name = "ae"
-
-    def __init__(self, features, epochs=5):
-        self.epochs = epochs
-        Transformation.__init__(features)
-
-    def fit(self, X, Y=None):
-        from ..utilities.highlevel import autoencode
-        self.model = autoencode(X, self.factors, epochs=self.epochs, get_model=True)[1:]
-
-    def apply(self, X: np.ndarray, Y=None):
-        (encoder, decoder), (mean, std) = self.model[0], self.model[1]
-        X = np.copy(X)
-        X -= mean
-        X /= std
-        for weights, biases in encoder:
-            X = np.tanh(X.dot(weights) + biases)
-        return X
-
-
 def transformation_factory(name, number_of_features=None, **kw):
     name = name.lower()[:5]
     if number_of_features is None:
@@ -77,8 +55,6 @@ def transformation_factory(name, number_of_features=None, **kw):
             raise RuntimeError("Please supply the number_of_features argument!")
     exc = {"std": Standardization,
            "stand": Standardization,
-           "ae": Autoencoding,
-           "autoe": Autoencoding,
            "pls": PLS}
     if name not in exc:
         return Transformation(name, number_of_features, **kw)
