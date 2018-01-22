@@ -7,23 +7,18 @@ class EmbeddingBase:
 
     def __init__(self, **kw):
         self._categories = None
-        self._embedments = None
-        self._translate = None
-        self.dummycode = None
-        self.floatX = kw.get("floatX", "float32")
+        self.dtype = kw.get("dtype", "float32")
         self.fitted = False
         self.dim = 1
 
     def fresh(self):
-        return self.__class__(floatX=self.floatX)
+        return self.__class__(floatX=self.dtype)
 
     def translate(self, X):
-        return self._translate(X)
+        raise NotImplementedError
 
-    def fit(self, X):
-        self._categories = np.sort(np.unique(X)).tolist()  # type: list
-        self.dummycode = np.vectorize(lambda x: self._categories.index(x))
-        self._translate = np.vectorize(lambda x: self._categories[x])
+    def fit(self, labels):
+        self._categories = np.sort(np.unique(labels)).tolist()  # type: list
 
     @property
     def outputs_required(self):
@@ -35,18 +30,25 @@ class EmbeddingBase:
             raise RuntimeError("Not yet fitted! Call fit() first!")
         if Y.ndim != 1:
             raise RuntimeError("Y must be a vector!")
-        dcs = self.dummycode(Y)
-        return self._embedments[dcs]
 
     def __str__(self):
-        return self.name
+        return self.__class__.__name__.lower()
 
     def __call__(self, X):
         return self.apply(X)
 
 
 class Dummycode(EmbeddingBase):
+
     name = "dummycode"
+
+    @np.vectorize
+    def apply(self, Y):
+        return self._categories.index(Y)
+
+    @np.vectorize
+    def translate(self, X):
+        return self._categories[X]
 
 
 class OneHot(EmbeddingBase):
@@ -70,14 +72,14 @@ class OneHot(EmbeddingBase):
 
         return super().translate(prediction)
 
-    def fit(self, X):
-        super().fit(X)
+    def fit(self, labels):
+        super().fit(labels)
 
         self.dim = len(self._categories)
 
         self._embedments = np.zeros((self.dim, self.dim)) + self._no
         np.fill_diagonal(self._embedments, self._yes)
-        self._embedments = self._embedments.astype(self.floatX)
+        self._embedments = self._embedments.astype(self.dtype)
 
         self.fitted = True
         return self
@@ -105,8 +107,8 @@ class Embedding(EmbeddingBase):
 
         return super().translate(dummycodes)
 
-    def fit(self, X):
-        super().fit(X)
+    def fit(self, labels):
+        super().fit(labels)
         cats = len(self._categories)
 
         self._embedments = np.random.randn(cats, self.dim)

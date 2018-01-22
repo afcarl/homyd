@@ -7,7 +7,7 @@ from homyd import Dataset
 
 
 def build_homyd_dataset():
-    ds = Dataset.from_multidimensional(*pull_mnist_data(split=0, fold=True), dtypes=("float32", None))
+    ds = Dataset.from_multidimensional(*pull_mnist_data(split=0, fold=True))
     ds.set_embedding("onehot")
     ds.split_new_subset_from(source_subset="learning", new_subset="testing", split_ratio=0.2)
     return ds

@@ -33,6 +33,13 @@ class Dataset:
         for subset in self._subsets:
             self[subset].dropna(inplace=True)
 
+    def set_embedding(self, embedding, **kw):
+        if not isinstance(embedding, EmbeddingBase):
+            embedding = embedding_factory(embedding, **kw)
+        if not embedding.fitted:
+            embedding.fit(self._subsets["learning"].Y)
+        self._config["embedding"] = embedding
+
     def batch_stream(self, batchsize=32, infinite=True, randomize=True, subset="learning"):
         return self[subset].batch_stream(batchsize, infinite, randomize)
 
@@ -61,6 +68,11 @@ class Dataset:
         if shuffle:
             tab.shuffle()
         return tab.X, tab.Y
+
+    def _apply_features_on_data(self, data):
+        x, y = data
+        emb = self._config["embedding"]
+        return x, y if emb is None else emb.apply(y)
 
     def __getitem__(self, item):
         if item not in self._subsets:
@@ -94,13 +106,6 @@ class FlatDataset(Dataset):
             transformation.fit(self["learning"].X, self["learning"].Y)
         self._config["transformation"] = transformation
 
-    def set_embedding(self, embedding, **kw):
-        if not isinstance(embedding, EmbeddingBase):
-            embedding = embedding_factory(embedding, **kw)
-        if not embedding.fitted:
-            embedding.fit(self._subsets["learning"].Y)
-        self._config["embedding"] = embedding
-
     def batch_stream(self, batchsize=32, infinite=True, randomize=True, subset="learning"):
         return map(self._apply_features_on_data, super().batch_stream(batchsize, infinite, randomize, subset))
 
@@ -108,6 +113,6 @@ class FlatDataset(Dataset):
         return self._apply_features_on_data(super().table(subset, shuffle))
 
     def _apply_features_on_data(self, data):
-        x, y = data
-        trf, emb = self._config["transformation"], self._config["embedding"]
-        return x if trf is None else trf.apply(x), y if emb is None else emb.apply(y)
+        x, y = super()._apply_features_on_data(data)
+        trf = self._config["transformation"]
+        return x if trf is None else trf.apply(x), y
