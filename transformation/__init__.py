@@ -1,1 +1,1 @@
-from .transformation import transformation_factory, Transformation, PLS, Standardization
+from .transformation import transformation_factory, Transformation, PLS

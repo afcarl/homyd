@@ -16,17 +16,19 @@ def build_homyd_dataset():
 def create_ann(inshape, outshape):
     brain = Sequential([
         Dense(60, input_shape=inshape, activation="tanh"),
-        Dense(outshape, activation="softmax")
+        Dense(outshape[0], activation="softmax")
     ])
-    brain.compile(optimizer="adam", loss="categorical_crossenropy", metrics=["acc"])
+    brain.compile(optimizer="adam", loss="categorical_crossentropy", metrics=["acc"])
     return brain
 
 
 def xperiment():
+    batch_size = 32
     data = build_homyd_dataset()
+    N = data.subset_sizes["learning"]
     ann = create_ann(*data.shapes)
-    ann.fit_generator(data.batch_stream(), steps_per_epoch=len(data) // 32, epochs=30,
-                      validation_data=data.table(subset="testing"))
+    ann.fit_generator(data.batch_stream(batch_size), steps_per_epoch=N // batch_size,
+                      epochs=30, validation_data=data.table(subset="testing"))
 
 
 if __name__ == '__main__':

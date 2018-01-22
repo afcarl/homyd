@@ -29,6 +29,10 @@ class Dataset:
     def shapes(self):
         return self._shapes
 
+    @property
+    def subset_sizes(self):
+        return {k: len(v) for k, v in self._subsets.items()}
+
     def dropna(self):
         for subset in self._subsets:
             self[subset].dropna(inplace=True)
@@ -41,7 +45,8 @@ class Dataset:
         self._config["embedding"] = embedding
 
     def batch_stream(self, batchsize=32, infinite=True, randomize=True, subset="learning"):
-        return self[subset].batch_stream(batchsize, infinite, randomize)
+        batches = self._subsets[subset].batch_stream(batchsize, infinite, randomize)
+        return map(self._apply_features_on_data, batches)
 
     def split_new_subset_from(self, source_subset, new_subset, split_ratio, randomize=True):
         if source_subset not in self._subsets:
@@ -78,6 +83,9 @@ class Dataset:
         if item not in self._subsets:
             raise KeyError(f"No such subset: {item}")
         return self._subsets[item]
+
+    def __len__(self):
+        return len(self._subsets["learning"])
 
 
 class FlatDataset(Dataset):

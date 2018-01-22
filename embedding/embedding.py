@@ -1,46 +1,47 @@
+import abc
+
 import numpy as np
 
 
-class EmbeddingBase:
+def _ensure_vector(array):
+    ar = array.squeeze()
+    if ar.ndim != 1:
+        raise RuntimeError("Supplied argument must be a vector!")
+    return ar
 
-    name = ""
 
-    def __init__(self, **kw):
+class EmbeddingBase(abc.ABC):
+
+    def __init__(self):
         self._categories = None
-        self.dtype = kw.get("dtype", "float32")
         self.fitted = False
-        self.dim = 1
 
     def fresh(self):
-        return self.__class__(floatX=self.dtype)
+        return self.__class__()
 
+    @abc.abstractmethod
     def translate(self, X):
         raise NotImplementedError
 
     def fit(self, labels):
+        labels = _ensure_vector(labels)
         self._categories = np.sort(np.unique(labels)).tolist()  # type: list
 
     @property
     def outputs_required(self):
-        return self.dim
+        return 1
 
+    @abc.abstractmethod
     def apply(self, Y):
-        Y = np.squeeze(Y)
+        _ensure_vector(Y)
         if not self.fitted:
             raise RuntimeError("Not yet fitted! Call fit() first!")
-        if Y.ndim != 1:
-            raise RuntimeError("Y must be a vector!")
 
     def __str__(self):
         return self.__class__.__name__.lower()
 
-    def __call__(self, X):
-        return self.apply(X)
-
 
 class Dummycode(EmbeddingBase):
-
-    name = "dummycode"
 
     @np.vectorize
     def apply(self, Y):
@@ -51,77 +52,85 @@ class Dummycode(EmbeddingBase):
         return self._categories[X]
 
 
-class OneHot(EmbeddingBase):
+class OneHot(Dummycode):
 
-    name = "onehot"
-
-    def __init__(self, yes=1., no=0.):
+    def __init__(self, yes=1., no=0., dtype="float32"):
         super().__init__()
+        self._dim = 0
         self._yes = yes
         self._no = no
-        self.dim = 0
+        self._eye = None
+        self.dtype = dtype
+
+    @property
+    def outputs_required(self):
+        return self._dim
 
     def fresh(self):
         return self.__class__(self._yes, self._no)
 
-    def translate(self, prediction: np.ndarray, dummy: bool=False):
+    def translate(self, prediction: np.ndarray):
         if prediction.ndim == 2:
             prediction = np.argmax(prediction, axis=1)
-            if dummy:
-                return prediction
 
         return super().translate(prediction)
 
     def fit(self, labels):
         super().fit(labels)
 
-        self.dim = len(self._categories)
+        self._dim = len(self._categories)
 
-        self._embedments = np.zeros((self.dim, self.dim)) + self._no
-        np.fill_diagonal(self._embedments, self._yes)
-        self._embedments = self._embedments.astype(self.dtype)
+        self._eye = np.zeros((self._dim, self._dim)) + self._no
+        np.fill_diagonal(self._eye, self._yes)
+        self._eye = self._eye.astype(self.dtype)
 
         self.fitted = True
         return self
 
+    def apply(self, Y):
+        dummy = super().apply(Y)
+        return self._eye[dummy]
 
-class Embedding(EmbeddingBase):
+
+class Embedding(Dummycode):
 
     name = "embedding"
 
-    def __init__(self, embeddim):
+    def __init__(self, embeddim, dtype="float32"):
         super().__init__()
-        self.dim = embeddim
+        self._dim = embeddim
+        self._embedments = None
+        self.dtype = dtype
 
     def fresh(self):
-        return self.__class__(self.dim)
+        return self.__class__(self._dim)
 
-    def translate(self, prediction: np.ndarray, dummy: bool=False):
+    def translate(self, prediction: np.ndarray):
         from ..utilities.vectorop import euclidean
         if prediction.ndim > 2:
             raise RuntimeError("<prediction> must be a matrix!")
 
         dummycodes = [np.argmin(euclidean(pred, self._embedments)) for pred in prediction]
-        if dummy:
-            return dummycodes
-
         return super().translate(dummycodes)
 
     def fit(self, labels):
         super().fit(labels)
-        cats = len(self._categories)
-
-        self._embedments = np.random.randn(cats, self.dim)
+        self._embedments = np.random.randn(len(self._categories), self._dim).astype(self.dtype)
         self.fitted = True
+
+    @np.vectorize
+    def apply(self, Y):
+        dummy = super().apply(Y)
+        return self._embedments[dummy]
 
 
 def embedding_factory(embedding, **kw):
     if embedding == "onehot":
         return OneHot(**kw)
     if embedding == "dummycode":
-        return Dummycode(**kw)
+        return Dummycode()
     if isinstance(embedding, int):
         if embedding < 1:
             raise ValueError(f"Embedding dimension invalid: {embedding}")
-        return Embedding(embedding)
+        return Embedding(embedding, **kw)
     raise ValueError(f"Embedding specification not understood: {embedding}")
