@@ -20,8 +20,8 @@ class Rescaling(Transformation):
 
     def apply(self, X, Y=None):
         X = self._ensure_shape(X)
-        out = (X - self._oldmin) / self._oldmax
-        out *= self._max
+        out = (X - self._oldmin) / (self._oldmax - self._oldmin)
+        out *= (self._max - self._min)
         out += self._min
         return unravel_matrix(out, self._input_shape)
 
@@ -80,7 +80,7 @@ class Decorrelation(Standardization):
         self._weights = None
 
     def fit(self, X, Y=None):
-        X = self._ensure_shape(X)
+        self._save_shape_and_ravel_to_matrix(X)
         super().fit(X)
         self._decomposition = np.linalg.svd(X - self._mean)
         self._weights = self._decomposition[-1]
