@@ -1,7 +1,6 @@
 import warnings
 
 import numpy as np
-from ..utilities.misc import pull_text
 
 
 class Filterer:
@@ -45,56 +44,3 @@ class Filterer:
 
     def revert(self):
         self.X, self.Y = self.raw
-
-
-def reparse_data(X, Y, header, **kw):
-    gkw = kw.get
-    fter = Filterer(X, Y, header.tolist())
-
-    if gkw("absval"):
-        X = np.abs(X)
-    if gkw("filterby") is not None:
-        fter.filter_by(gkw("filterby"), gkw("selection"))
-    if gkw("feature"):
-        Y = fter.select_feature(gkw("feature"))
-    if gkw("dropna"):
-        from ..utilities.vectorop import dropna
-        X, Y = dropna(X, Y)
-    class_treshold = gkw("discard_class_treshold", 0)
-    if class_treshold:
-        from ..utilities.vectorop import drop_lowNs
-        X, Y = drop_lowNs(X, Y, class_treshold)
-    return X, Y, header
-
-
-def reparse_txt(src, **kw):
-    replaces = kw.get("replaces", ())
-    if kw.pop("decimal", False):
-        replaces += ((",", "."),)
-    if kw.pop("dehun", False):
-        src = dehungarize(src)
-    if kw.pop("lower", False):
-        src = src.lower()
-    for old, new in replaces:
-        src = str.replace(src, old, new)
-    return src
-
-
-def dehungarize(src, outflpath=None, incoding=None, outcoding=None):
-
-    hun_to_asc = {"á": "a", "é": "e", "í": "i",
-                  "ó": "o", "ö": "o", "ő": "o",
-                  "ú": "u", "ü": "u", "ű": "u",
-                  "Á": "A", "É": "E", "Í": "I",
-                  "Ó": "O", "Ö": "O", "Ő": "O",
-                  "Ú": "U", "Ü": "U", "Ű": "U"}
-
-    if ("/" in src or "\\" in src) and len(src) < 200:
-        src = pull_text(src, coding=incoding)
-    src = "".join(char if char not in hun_to_asc else hun_to_asc[char] for char in src)
-    if outflpath is None:
-        return src
-    else:
-        with open(outflpath, "w", encoding=outcoding) as outfl:
-            outfl.write(src)
-            outfl.close()

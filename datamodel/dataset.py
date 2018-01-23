@@ -1,7 +1,8 @@
 import pandas as pd
 
 from .learningtable import LearningTable
-from ..embedding import EmbeddingBase, embedding_factory
+from ..embedding import embedding_factory
+from ..embedding.abstract import EmbeddingBase
 from ..transformation import Transformation, transformation_factory
 
 

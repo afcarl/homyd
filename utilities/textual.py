@@ -3,6 +3,10 @@ import warnings
 import numpy as np
 
 
+def pull_text(source, encoding="utf8"):
+    return open(source, encoding=encoding).read()
+
+
 def to_ngrams(txt, ngram):
     txar = np.array(list(txt))
     N = txar.shape[0]

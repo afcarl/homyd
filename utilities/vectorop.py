@@ -20,39 +20,14 @@ def rescale(X: np.ndarray, axis=0, ufctr=(0, 1), dfctr=None, return_factors=Fals
     return (output, dfctr, ufctr) if return_factors else output
 
 
-def standardize(X, mean=None, std=None, return_factors=False):
-    mean = X.mean(axis=0) if mean is None else mean
-    std = (X.std(axis=0) + 1e-8) if std is None else std
-    scaled = (X - mean) / std
-    return (scaled, (mean, std)) if return_factors else scaled
-
-
-def euclidean(itr: np.ndarray, target: np.ndarray):
-    # return np.linalg.norm(itr - target, axis=0)  slower !!!
-    return np.sqrt(np.sum(np.square(itr - target), axis=0))
-
-
 def ravel_to_matrix(A):
-    A = np.atleast_2d(A)
+    A = np.atleast_2d(np.squeeze(A))
     return A.reshape(A.shape[0], np.prod(A.shape[1:]))
 
 
-def dummycode(dependent, get_translator=True):
-    categ = np.unique(dependent)
-    dummy = np.arange(len(categ))
-
-    dummy_dict = dict()
-    dreverse = dict()
-
-    applier = np.vectorize(lambda x: dummy_dict[x])
-    reverter = np.vectorize(lambda x: dreverse[x])
-
-    for c, d in zip(categ, dummy):
-        dummy_dict[d] = c
-        dummy_dict[c] = d
-
-    dependent = applier(dependent)
-    return (dependent, applier, reverter) if get_translator else dependent
+def unravel_matrix(A, shape):
+    A = ravel_to_matrix(A)
+    return A.reshape(len(A), *shape)
 
 
 def split_by_categories(labels: np.ndarray, X: np.ndarray=None):
@@ -83,6 +58,6 @@ def separate_validation(ratio, X, Y, balanced=False, nowarning=False):
             lY.append(array2[larg])
             vX.append(array[varg])
             vY.append(array2[varg])
-        return list(map(np.concatenate, (lX, lY, vX, vY)))
+        return tuple(map(np.concatenate, (lX, lY, vX, vY)))
 
     return (balanced_separate if balanced else simple_separate)(ratio, X, Y)
